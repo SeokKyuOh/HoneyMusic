@@ -1,0 +1,23 @@
+@font-face {
+	font-family: "À±°íµñ330";
+	font-style: normal;
+	font-weight: 330;
+	src: local("À±°íµñ Regular"), local("À±°íµñ-Regular"),
+		url("../fonts/À±°íµñ-Regular-330.woff") format("ttf")
+}
+
+@font-face {
+	font-family: "Varela";
+	font-style: Bold;
+	font-weight: 400;
+	src: local("Varela Bold"), url("../fonts/Varela-400.woff") format("woff")
+}
+
+@font-face {
+	font-family: "À±°íµñ330";
+	font-style: normal;
+	font-weight: 330;
+	src: local("À±°íµñ Regular"), local("À±°íµñ-Regular"),
+		url("../fonts/À±°íµñ-Regular-330.woff") format("ttf")
+}
+}

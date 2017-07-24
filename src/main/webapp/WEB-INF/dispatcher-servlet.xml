@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+	xmlns:hadoop="http://www.springframework.org/schema/hadoop"
+	xsi:schemaLocation="http://www.springframework.org/schema/data/mongo http://www.springframework.org/schema/data/mongo/spring-mongo-1.8.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.2.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd">
+	<context:annotation-config />
+	<context:component-scan base-package="com.sist.*" />
+	<util:properties id="db" location="/WEB-INF/db.properties" />
+	<bean id="ds" class="org.apache.commons.dbcp.BasicDataSource"
+		p:driverClassName="#{db['driver']}" p:url="#{db['url']}" p:username="#{db['username']}"
+		p:password="#{db['password']}" />
+
+	<hadoop:configuration id="hadoopConf">
+		fs.default.name=hdfs://namenode:9000
+	</hadoop:configuration>
+
+	<bean id="ssf" class="org.mybatis.spring.SqlSessionFactoryBean"
+		p:dataSource-ref="ds" />
+
+	<!-- PlaylistMapper -->
+	<bean id="pMapper" class="org.mybatis.spring.mapper.MapperFactoryBean"
+		p:sqlSessionFactory-ref="ssf" p:mapperInterface="com.sist.playlist.dao.PlaylistMapper" />
+
+	<!-- MemberMapper -->
+	<bean id="mMapper" class="org.mybatis.spring.mapper.MapperFactoryBean"
+		p:sqlSessionFactory-ref="ssf" p:mapperInterface="com.sist.member.dao.MemberMapper" />
+
+	<!-- BoardMapper -->
+	<bean id="boardMapper" class="org.mybatis.spring.mapper.MapperFactoryBean"
+		p:sqlSessionFactory-ref="ssf" p:mapperInterface="com.sist.board.dao.BoardMapper" />
+
+	<!-- QuestionMapper -->
+	<bean id="qMapper" class="org.mybatis.spring.mapper.MapperFactoryBean"
+		p:sqlSessionFactory-ref="ssf" p:mapperInterface="com.sist.board.dao.QuestionMapper" />
+
+	<!-- SearchMapper -->
+	<bean id="searchMapper" class="org.mybatis.spring.mapper.MapperFactoryBean"
+		p:sqlSessionFactory-ref="ssf" p:mapperInterface="com.sist.search.dao.SearchMapper" />
+
+	<bean id="dMapper" class="org.mybatis.spring.mapper.MapperFactoryBean"
+		p:sqlSessionFactory-ref="ssf" p:mapperInterface="com.sist.chart.Daily_ChartMapper" />
+	<bean id="nMapper" class="org.mybatis.spring.mapper.MapperFactoryBean"
+		p:sqlSessionFactory-ref="ssf" p:mapperInterface="com.sist.newest.NewMusicMapper" />
+	<bean id="aMapper" class="org.mybatis.spring.mapper.MapperFactoryBean"
+		p:sqlSessionFactory-ref="ssf" p:mapperInterface="com.sist.newest.NewAlbumMapper" />
+	<bean id="gMapper" class="org.mybatis.spring.mapper.MapperFactoryBean"
+		p:sqlSessionFactory-ref="ssf" p:mapperInterface="com.sist.genre.GenreMapper" />
+	<bean id="sMapper" class="org.mybatis.spring.mapper.MapperFactoryBean"
+		p:sqlSessionFactory-ref="ssf" p:mapperInterface="com.sist.ticket.dao.StreamingMapper" />
+
+	<bean id="downMapper" class="org.mybatis.spring.mapper.MapperFactoryBean"
+		p:sqlSessionFactory-ref="ssf" p:mapperInterface="com.sist.ticket.dao.DownloadMapper" />
+	<bean id="gaMapper" class="org.mybatis.spring.mapper.MapperFactoryBean"
+		p:sqlSessionFactory-ref="ssf" p:mapperInterface="com.sist.genre.GenreAlbumMapper" />
+	<bean id="aiMapper" class="org.mybatis.spring.mapper.MapperFactoryBean"
+		p:sqlSessionFactory-ref="ssf" p:mapperInterface="com.sist.albumInfo/AlbumInfoMapper" />
+
+	<mvc:annotation-driven>
+		<mvc:message-converters>
+			<!-- @ResponseBody로 String 처리할때 한글처리 -->
+			<bean class="org.springframework.http.converter.StringHttpMessageConverter">
+				<property name="supportedMediaTypes">
+					<list>
+						<value>text/html;charset=UTF-8</value>
+					</list>
+				</property>
+			</bean>
+		</mvc:message-converters>
+	</mvc:annotation-driven>
+
+	<!-- 앞으로 css, js, img, png파일들은 모두 /webapp/resources에 저장합시다! -->
+	<mvc:resources location="/resources/" mapping="/resources/**" />
+
+	<bean id="viewResolver"
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver"
+		p:prefix="/" p:suffix=".jsp" />
+	<bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver" />
+
+
+
+	<mongo:mongo-client host="211.238.142.101" id="mc"
+		port="27017" />
+	<bean id="mt" class="org.springframework.data.mongodb.core.MongoTemplate">
+		<constructor-arg ref="mc" />
+		<constructor-arg name="databaseName" value="mydb" />
+	</bean>
+
+	<hadoop:job id="recommandJob"
+       configuration-ref="hadoopConf"
+       input-path="/input_honey/"
+       output-path="/output_honey/"
+       mapper="com.sist.recommand.RecommandMapper"
+       reducer="com.sist.recommand.RecommandReducer"
+       scope="prototype"
+    />
+  
+  
+   <hadoop:job-runner job-ref="recommandJob" id="rj"
+    run-at-startup="false" 
+   />
+   
+   <hadoop:job id="movieJob"
+       configuration-ref="hadoopConf"
+       input-path="/input_honey/"
+       output-path="/output_honey/"
+       mapper="com.sist.recommand.RecommandMapper"
+       reducer="com.sist.recommand.RecommandReducer"
+       scope="prototype"
+    />
+    
+   <hadoop:job-runner job-ref="movieJob" id="mj"
+    run-at-startup="false"
+   />
+</beans>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
